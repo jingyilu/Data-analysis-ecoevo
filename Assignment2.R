@@ -72,3 +72,16 @@ Chi_Suare_greater = ((0 - expected_greater_than_five)^2)/expected_greater_than_f
 
 Chi_Square_sum <- sum(Goal_frequency$Chi_Square) + Chi_Suare_greater
 qchisq(0.95, 5)
+
+##Grouping the category with expectation less than one
+Goal_frequency_trim <- Goal_frequency %>%
+  select(Freq) %>%
+  top_n(5)
+Goal_frequency_trim[5,1] <- Goal_frequency[5,2] + Goal_frequency[6,2]
+expected_prob_trim <- c((dpois(0:3, sample_mean)), 1-ppois(3, sample_mean))
+expected_freq_trim <- expected_prob_trim*112
+Goal_frequency_trim$expected_freq <- expected_freq_trim
+Goal_frequency_trim <- Goal_frequency_trim%>%
+  mutate(Chi_Square = ((Freq - expected_freq)^2)/expected_freq)
+Chi_Square_trim_sum <- sum(Goal_frequency_trim$Chi_Square)
+qchisq(0.95, 3)
