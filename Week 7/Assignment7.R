@@ -123,8 +123,7 @@ x.mean <- runif(1,1,10)
 y.mean <- runif(1,1,10)
 
 #Calculate slopes and intercept
-#for convenience, set the var(x) and var(y) to 1; the absolute values will not affect the results
-var.y <- var.x <- 1; cor.x.y <- 0.5
+var.y <- var.x <- runif(1,1,10); cor.x.y <- 0.5
 cov.x.y <- cor.x.y*(var.x*var.y)^(1/2)
 beta.slope.y.x <- cov.x.y/var.x
 beta.slope.x.y <- cov.x.y/var.y
