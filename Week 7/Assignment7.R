@@ -6,10 +6,10 @@ library(nlme)
 ######
 #1
 Galapagos <- read.csv("Galapagos.csv", header = T, na.strings="unknown")
-lm.obs.num <- Anova(lm(Observed.number.of.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
-       Distance.from.Santa.Cruz..km.+Area.of.adjacent.island..km2., data = Galapagos), type = "III")
-lm.obs.nat.num <- Anova(lm(Observed.number.of.native.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
-           Distance.from.Santa.Cruz..km.+Area.of.adjacent.island..km2., data = Galapagos), type = "III")
+#lm.obs.num <- Anova(lm(Observed.number.of.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
+#       Distance.from.Santa.Cruz..km.+Area.of.adjacent.island..km2., data = Galapagos), type = "III")
+#lm.obs.nat.num <- Anova(lm(Observed.number.of.native.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
+#           Distance.from.Santa.Cruz..km.+Area.of.adjacent.island..km2., data = Galapagos), type = "III")
 summary(lm(Observed.number.of.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
              Distance.from.Santa.Cruz..km.+Area.of.adjacent.island..km2., data = Galapagos))
 summary(lm(Observed.number.of.native.species~Area..km2.+Elevation..m.+Distance.from.nearest.island..km.+
@@ -39,6 +39,7 @@ chisq.pop.rh <- chisq.test(Pop.Rh)
 ######
 #3
 Fruitflies <- read.csv("fruitflies.csv", header = T)
+#Draw histograms for each treatments
 G8p.hist <- Fruitflies %>%
   filter(Treatment == "8 pregnant females")%>%
   ggplot(aes(x = Lifespan)) + 
@@ -94,7 +95,7 @@ G8v.hist <- Fruitflies %>%
   xlab("Life Span (days)") + ylab("Frequency")
 ggsave("Treatment of 8 virgin female.pdf", dpi = 300, height = 8.4, width =12.7, units = "cm")
 
-#Anova
+#Anova (separate treatments with female number)
 #Fruitflies <- Fruitflies %>%
 #  mutate(Treatment.true = 
 #           case_when(Treatment == "no females added" ~ "Control",
@@ -104,25 +105,52 @@ ggsave("Treatment of 8 virgin female.pdf", dpi = 300, height = 8.4, width =12.7,
 #                      random = ~ 1|factor(No..female.partners), data = Fruitflies)
 #Anova.fruitflies.f <- lme(fixed = Lifespan ~ Treatment.true,
 #                          random = ~1, data = Fruitflies)
+
+
 summary(lm(Lifespan ~ Treatment, data = Fruitflies))
 anova.fruitflies <- Anova(lm(Lifespan ~ Treatment, data = Fruitflies), type = "III")
 summary(aov(Lifespan ~ Treatment, data = Fruitflies))
 
+#Levene's Test for variance homogeneity
 leveneTest(Fruitflies$Lifespan, group = Fruitflies$Treatment)
 
 
 ######
 #4
-cov.x.y <- 0.5
-var.x <- 1
-beta.slope <- cov.x.y/var.x
+#random number of x min and y min
+set.seed(1)
+x.mean <- runif(1,1,10)
+y.mean <- runif(1,1,10)
+
+#Calculate slopes and intercept
+#for convenience, set the var(x) and var(y) to 1; the absolute values will not affect the results
+var.y <- var.x <- 1; cor.x.y <- 0.5
+cov.x.y <- cor.x.y*(var.x*var.y)^(1/2)
+beta.slope.y.x <- cov.x.y/var.x
+beta.slope.x.y <- cov.x.y/var.y
+alpha.x <- y.mean-beta.slope.y.x*x.mean
+alpha.y <- x.mean-beta.slope.x.y*y.mean
+
+#For correlation equals to 1
+cor.x.y.1 <- 1
+cov.x.y.1 <- cor.x.y.1*(var.x*var.y)^(1/2)
+beta.slope.y.x.1 <- cov.x.y.1/var.x
+beta.slope.x.y.1 <- cov.x.y.1/var.y
+alpha.x.1 <- y.mean-beta.slope.y.x.1*x.mean
+alpha.y.1 <- x.mean-beta.slope.x.y.1*y.mean
+
+#Plot the regression lines
 df <- data.frame()
-ggplot(df) + 
+regression.effect <- ggplot(df) + 
   theme(panel.background = element_blank(),
         axis.text=element_text(size=7), axis.title=element_text(size=10,face="bold"),
         axis.line.x.bottom = element_line(color="black", size = 0.25),
         axis.line.y.left = element_line(color="black", size = 0.25)) +
-  geom_abline(slope = beta.slope) + 
-  xlim(0, 10) + ylim(0, 10)
-ggsave("slope 0.5 regression.pdf", dpi = 300, height = 8.4, width =12.7, units = "cm")
+  geom_abline(slope = beta.slope.y.x, intercept = alpha.x, color =  "#800000") + 
+  geom_abline(slope = 1/beta.slope.x.y, intercept = -alpha.y/beta.slope.x.y) + 
+  geom_abline(slope = beta.slope.x.y.1, intercept = -alpha.y.1/beta.slope.x.y.1, color = "#6495ED", linetype = "dashed") +
+  geom_abline(slope = 1/beta.slope.x.y.1, intercept = -alpha.y.1/beta.slope.x.y.1, color = "#3CB371", linetype = "dotdash") +
+  scale_x_continuous(limits = c(0,10), expand = c(0, 0)) + 
+  scale_y_continuous(limits = c(0,10),expand = c(0, 0))
+ggsave("Regression effect.pdf", dpi = 300, height = 8.4, width =12.7, units = "cm")
 
